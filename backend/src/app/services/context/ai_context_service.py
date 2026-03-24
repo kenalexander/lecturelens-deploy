@@ -1,15 +1,17 @@
 import json
 import os
+import socket
 import urllib.request
 import urllib.error
 from typing import Iterable
 
 
-def _request_openai_text(prompt: str) -> str:
+def _request_openai_text(prompt: str, timeout_seconds: int | None = None) -> str:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY not configured")
     model = os.getenv("LLM_MODEL", "gpt-5-mini")
+    timeout = timeout_seconds or int(os.getenv("OPENAI_TIMEOUT_SECONDS", "30"))
     url = "https://api.openai.com/v1/responses"
     payload = {
         "model": model,
@@ -22,7 +24,7 @@ def _request_openai_text(prompt: str) -> str:
     }
     request = urllib.request.Request(url, data=data, headers=headers, method="POST")
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             raw_json = response.read().decode("utf-8")
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", "ignore")
@@ -30,6 +32,14 @@ def _request_openai_text(prompt: str) -> str:
             preview = body[:200].replace("\n", " ")
             print(f"[LLM] context http_error={exc.code} body='{preview}'")
         raise
+    except TimeoutError as exc:
+        raise RuntimeError(
+            f"OpenAI request timed out after {timeout} seconds. Try again or reduce the amount of source text."
+        ) from exc
+    except socket.timeout as exc:
+        raise RuntimeError(
+            f"OpenAI request timed out after {timeout} seconds. Try again or reduce the amount of source text."
+        ) from exc
     parsed = json.loads(raw_json)
     text = parsed.get("output_text")
     if isinstance(text, str) and text.strip():

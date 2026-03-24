@@ -142,10 +142,15 @@ def _init_postgres() -> None:
                 id SERIAL PRIMARY KEY,
                 email TEXT NOT NULL UNIQUE,
                 password_hash TEXT NOT NULL,
+                google_sub TEXT UNIQUE,
                 mobile_link_nonce INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL
             )
             """
+        )
+        cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT")
+        cursor.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_unique_idx ON users (google_sub)"
         )
         cursor.execute(
             """
@@ -237,6 +242,7 @@ def _init_sqlite() -> None:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT NOT NULL UNIQUE,
                 password_hash TEXT NOT NULL,
+                google_sub TEXT UNIQUE,
                 mobile_link_nonce INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL
             )
@@ -246,6 +252,9 @@ def _init_sqlite() -> None:
         user_columns = {row[1] for row in cursor.fetchall()}
         if "mobile_link_nonce" not in user_columns:
             cursor.execute("ALTER TABLE users ADD COLUMN mobile_link_nonce INTEGER NOT NULL DEFAULT 0")
+        if "google_sub" not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN google_sub TEXT")
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_unique_idx ON users(google_sub)")
 
         cursor.execute(
             """

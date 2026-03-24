@@ -11,6 +11,7 @@ from app.api.profile import router as profile_router
 from app.api.semesters import router as semesters_router
 from app.api.courses import router as courses_router
 from app.api.sessions import router as sessions_router
+from app.api.study import router as study_router
 from app.core.db import init_db, get_db
 
 app = FastAPI(title="LectureLens API")
@@ -52,3 +53,4 @@ app.include_router(profile_router)
 app.include_router(semesters_router)
 app.include_router(courses_router)
 app.include_router(sessions_router)
+app.include_router(study_router)

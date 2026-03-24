@@ -79,7 +79,10 @@ Set at least:
 OPENAI_API_KEY=...
 NOTES_MODE=llm
 LLM_PROVIDER=openai
+GOOGLE_CLIENT_ID=your-google-oauth-client-id-here
 ```
+
+Leave `DATABASE_URL` unset to use the local SQLite database at `backend/data/lecturelens.db`.
 
 Run backend:
 
@@ -96,6 +99,14 @@ cd frontend
 npm install
 npm run dev
 ```
+
+If you want Google sign-in locally, add this to `frontend/.env.local` or your frontend env file:
+
+```env
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-oauth-client-id-here
+```
+
+Use the same Google OAuth Web client ID in both frontend and backend env files, and add `http://localhost:3000` to the Google Cloud Console authorized JavaScript origins.
 
 Open:
 

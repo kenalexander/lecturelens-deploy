@@ -88,6 +88,18 @@ export interface SessionInfo {
   final_notes_versions_count?: number;
 }
 
+export interface Flashcard {
+  question: string;
+  answer: string;
+  hint?: string | null;
+}
+
+export interface FlashcardDeck {
+  title: string;
+  summary?: string | null;
+  cards: Flashcard[];
+}
+
 export async function register(email: string, password: string): Promise<UserInfo> {
   return request("/auth/register", {
     method: "POST",
@@ -99,6 +111,13 @@ export async function login(email: string, password: string): Promise<UserInfo> 
   return request("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password })
+  });
+}
+
+export async function loginWithGoogle(credential: string): Promise<UserInfo> {
+  return request("/auth/google", {
+    method: "POST",
+    body: JSON.stringify({ credential })
   });
 }
 
@@ -192,4 +211,18 @@ export async function deleteSession(id: string): Promise<{ ok: boolean }> {
 
 export async function regenerateSessionFinalNotes(id: string): Promise<SessionInfo> {
   return request(`/sessions/${id}/regenerate-final-notes`, { method: "POST" });
+}
+
+export async function generateFlashcards(payload: {
+  topic: string;
+  source_text?: string;
+  course_id?: number;
+  session_id?: string;
+  use_session_source?: boolean;
+  card_count?: number;
+}): Promise<FlashcardDeck> {
+  return request("/study/flashcards", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
 }

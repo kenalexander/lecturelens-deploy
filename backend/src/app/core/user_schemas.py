@@ -55,6 +55,27 @@ class CourseOut(BaseModel):
     context_summary: Optional[str] = None
 
 
+class FlashcardGenerateIn(BaseModel):
+    topic: str = Field(min_length=3, max_length=200)
+    source_text: Optional[str] = Field(default=None, max_length=8000)
+    course_id: Optional[int] = None
+    session_id: Optional[str] = None
+    use_session_source: bool = False
+    card_count: int = Field(default=8, ge=3, le=15)
+
+
+class FlashcardOut(BaseModel):
+    question: str
+    answer: str
+    hint: Optional[str] = None
+
+
+class FlashcardDeckOut(BaseModel):
+    title: str
+    summary: Optional[str] = None
+    cards: list[FlashcardOut] = Field(default_factory=list)
+
+
 class SessionOut(BaseModel):
     id: str
     course_id: Optional[int] = None

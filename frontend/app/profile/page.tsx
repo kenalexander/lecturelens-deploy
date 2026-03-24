@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Script from "next/script";
+import { useEffect, useRef, useState } from "react";
 import AppLayout from "../../components/AppLayout";
 import {
   register,
   login,
+  loginWithGoogle,
   logout,
   getMe,
   getProfile,
@@ -13,6 +15,7 @@ import {
 } from "../../lib/api";
 
 export default function ProfilePage() {
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() ?? "";
   const [user, setUser] = useState<{ id: number; email: string } | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,6 +24,8 @@ export default function ProfilePage() {
   const [institution, setInstitution] = useState("");
   const [context, setContext] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [googleScriptReady, setGoogleScriptReady] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
 
   const loadProfile = async () => {
     try {
@@ -47,6 +52,39 @@ export default function ProfilePage() {
     init();
   }, []);
 
+  useEffect(() => {
+    if (!googleClientId || !googleScriptReady || user || !googleButtonRef.current || !window.google) {
+      return;
+    }
+
+    googleButtonRef.current.innerHTML = "";
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: async ({ credential }) => {
+        if (!credential) {
+          setStatus("Google sign-in did not return a credential");
+          return;
+        }
+
+        setStatus(null);
+        try {
+          const me = await loginWithGoogle(credential);
+          setUser(me);
+          await loadProfile();
+        } catch (err) {
+          setStatus(err instanceof Error ? err.message : "Google sign-in failed");
+        }
+      }
+    });
+    window.google.accounts.id.renderButton(googleButtonRef.current, {
+      theme: "outline",
+      size: "large",
+      shape: "pill",
+      text: "continue_with",
+      width: 320
+    });
+  }, [googleClientId, googleScriptReady, user]);
+
   const handleRegister = async () => {
     setStatus(null);
     try {
@@ -72,6 +110,12 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     setStatus(null);
     await logout();
+    if (window.google) {
+      window.google.accounts.id.cancel();
+    }
+    if (googleButtonRef.current) {
+      googleButtonRef.current.innerHTML = "";
+    }
     setUser(null);
     setContext(null);
     setFullName("");
@@ -117,6 +161,9 @@ export default function ProfilePage() {
           {!user && (
             <div className="form-section">
               <h2>Sign in</h2>
+              <p className="signin-helper">
+                Use your LectureLens account, or continue with the Google account tied to your school email.
+              </p>
               <div className="form-row">
                 <label>Email</label>
                 <input
@@ -144,6 +191,16 @@ export default function ProfilePage() {
                   Create account
                 </button>
               </div>
+              {googleClientId && (
+                <>
+                  <div className="signin-divider" aria-hidden="true">
+                    <span>or continue with Google</span>
+                  </div>
+                  <div className="google-signin-wrap">
+                    <div ref={googleButtonRef} />
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -198,6 +255,14 @@ export default function ProfilePage() {
           {status && <div className="inline-error">{status}</div>}
         </div>
       </main>
+      {googleClientId && (
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="afterInteractive"
+          onLoad={() => setGoogleScriptReady(true)}
+          onError={() => setStatus("Failed to load Google sign-in")}
+        />
+      )}
     </AppLayout>
   );
 }
