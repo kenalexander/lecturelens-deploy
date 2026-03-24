@@ -8,7 +8,8 @@ const navItems = [
   { href: "/live", label: "Live Session" },
   { href: "/profile", label: "Profile" },
   { href: "/semesters", label: "Semesters & Courses" },
-  { href: "/sessions", label: "Session History" }
+  { href: "/sessions", label: "Session History" },
+  { href: "/flashcards", label: "Flashcards" }
 ];
 
 export default function Sidebar() {
